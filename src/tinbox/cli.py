@@ -81,7 +81,8 @@ def display_cost_estimate(estimate, model: ModelType) -> None:
     table.add_column("Value")
 
     table.add_row("Estimated Tokens", f"{estimate.estimated_tokens:,}")
-    if model != ModelType.OLLAMA:
+    # Only show cost for cloud models (not local models like Ollama or LM Studio)
+    if model not in (ModelType.OLLAMA, ModelType.LMSTUDIO):
         table.add_row("Estimated Cost", f"${estimate.estimated_cost:.2f}")
     table.add_row("Estimated Time", f"{estimate.estimated_time / 60:.1f} minutes")
     table.add_row("Cost Level", estimate.cost_level.value.title())
@@ -98,7 +99,8 @@ def parse_model_spec(model_spec: str) -> tuple[ModelType, str]:
     """Parse a model specification string.
 
     Args:
-        model_spec: Model specification (e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet', 'ollama:mistral-small')
+        model_spec: Model specification (e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet',
+                    'ollama:mistral-small', 'lmstudio:local-model')
 
     Returns:
         Tuple of (ModelType, str) for the provider and model name.
@@ -109,7 +111,7 @@ def parse_model_spec(model_spec: str) -> tuple[ModelType, str]:
     if ":" not in model_spec:
         raise ValueError(
             "Invalid model specification. Use format 'provider:model' "
-            "(e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet', 'ollama:mistral-small')"
+            "(e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet', 'ollama:mistral-small', 'lmstudio:local-model')"
         )
 
     provider, model = model_spec.split(":", 1)
@@ -160,7 +162,7 @@ def translate(
         "anthropic:claude-3-sonnet",
         "--model",
         "-m",
-        help="Model to use (e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet', 'ollama:mistral-small').",
+        help="Model to use (e.g., 'openai:gpt-4o', 'anthropic:claude-3-sonnet', 'ollama:mistral-small', 'lmstudio:local-model').",
     ),
     algorithm: str = typer.Option(
         "page",
@@ -292,7 +294,8 @@ def translate(
 
             table.add_row("Time Taken", f"{result.time_taken:.1f} seconds")
             table.add_row("Tokens Used", f"{result.tokens_used:,}")
-            if model_type != ModelType.OLLAMA:
+            # Only show cost for cloud models (not local models like Ollama or LM Studio)
+            if model_type not in (ModelType.OLLAMA, ModelType.LMSTUDIO):
                 table.add_row("Final Cost", f"${result.cost:.4f}")
 
             console.print("\n", table)

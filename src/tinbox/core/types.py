@@ -21,6 +21,7 @@ class ModelType(str, Enum):
     OPENAI = "openai"  # OpenAI models (GPT-4, etc.)
     ANTHROPIC = "anthropic"  # Anthropic models (Claude)
     OLLAMA = "ollama"  # Local models via Ollama
+    LMSTUDIO = "lmstudio"  # Local models via LM Studio
     GEMINI = "gemini"  # Google's Gemini models
 
 

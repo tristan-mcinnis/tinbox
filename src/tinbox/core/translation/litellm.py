@@ -1,6 +1,7 @@
 """LiteLLM-based translation implementation."""
 
 import base64
+import os
 from datetime import datetime
 from typing import AsyncIterator, Union
 import io
@@ -82,6 +83,10 @@ class LiteLLMTranslator(ModelInterface):
         # Handle provider-specific model strings
         if request.model == ModelType.OLLAMA:
             return f"ollama/{model_name}"
+        elif request.model == ModelType.LMSTUDIO:
+            # LM Studio uses OpenAI-compatible API, so we use openai/ prefix
+            # The API base URL will be set separately via api_base parameter
+            return f"openai/{model_name}"
         elif request.model == ModelType.OPENAI:
             return model_name  # OpenAI models use their names directly
         elif request.model == ModelType.ANTHROPIC:
@@ -172,14 +177,27 @@ class LiteLLMTranslator(ModelInterface):
             TranslationError: If translation fails after retries
         """
         try:
-            return completion(
-                model=self._get_model_string(request),
-                messages=self._create_prompt(request),
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                stream=stream,
-                **{k: v for k, v in request.model_params.items() if k != "model_name"},
+            # Prepare completion parameters
+            completion_params = {
+                "model": self._get_model_string(request),
+                "messages": self._create_prompt(request),
+                "temperature": self.temperature,
+                "max_tokens": self.max_tokens,
+                "stream": stream,
+            }
+
+            # Add LM Studio API base URL if using LM Studio
+            if request.model == ModelType.LMSTUDIO:
+                # Get LM Studio base URL from environment or use default
+                lm_studio_base = os.environ.get("LMSTUDIO_API_BASE", "http://localhost:1234/v1")
+                completion_params["api_base"] = lm_studio_base
+
+            # Add any extra model parameters
+            completion_params.update(
+                {k: v for k, v in request.model_params.items() if k != "model_name"}
             )
+
+            return completion(**completion_params)
         except RateLimitError as e:
             # This will be caught by the retry decorator
             raise

@@ -7,7 +7,7 @@ from tinbox.core.translation.interface import (
     TranslationError,
 )
 from tinbox.core.translation.litellm import LiteLLMTranslator
-from tinbox.core.types import TranslationConfig
+from tinbox.core.types import TranslationConfig, ModelType
 
 
 def create_translator(config: TranslationConfig) -> ModelInterface:
@@ -19,7 +19,14 @@ def create_translator(config: TranslationConfig) -> ModelInterface:
     Returns:
         Configured translator instance
     """
-    translator = LiteLLMTranslator()
+    # Use smaller token limits for local models (LM Studio and Ollama)
+    # since they typically have smaller context windows and less capacity
+    if config.model in (ModelType.LMSTUDIO, ModelType.OLLAMA):
+        max_tokens = 2048  # More conservative for local models
+    else:
+        max_tokens = 4096  # Standard for cloud models
+
+    translator = LiteLLMTranslator(max_tokens=max_tokens)
 
     # Create translation request with model-specific parameters
     model_params = {}

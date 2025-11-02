@@ -21,6 +21,7 @@ MODEL_COSTS: Dict[ModelType, float] = {
     ModelType.OPENAI: 0.03,  # $0.03 per 1K input tokens, $0.06 per 1K output tokens
     ModelType.ANTHROPIC: 0.003,  # $0.003 per 1K input tokens, $0.015 per 1K output tokens
     ModelType.OLLAMA: 0.0,  # Free for local models
+    ModelType.LMSTUDIO: 0.0,  # Free for local models via LM Studio
 }
 
 
@@ -131,17 +132,21 @@ def estimate_cost(
 
     # Estimate time (very rough estimate)
     # Assume 5 tokens/second for cloud models, 20 tokens/second for local
-    tokens_per_second = 20 if model == ModelType.OLLAMA else 5
+    # LM Studio may be slower with smaller models, so use conservative estimate
+    if model in (ModelType.OLLAMA, ModelType.LMSTUDIO):
+        tokens_per_second = 20
+    else:
+        tokens_per_second = 5
     estimated_time = estimated_tokens / tokens_per_second
 
     warnings = []
 
     # Generate warnings
-    if model != ModelType.OLLAMA:
+    if model not in (ModelType.OLLAMA, ModelType.LMSTUDIO):
         if estimated_tokens > 50000:  # More than 50K tokens
             warnings.append(
                 f"Large document detected ({estimated_tokens:,} tokens). "
-                "Consider using Ollama for better performance and no cost."
+                "Consider using Ollama or LM Studio for better performance and no cost."
             )
 
         if max_cost and estimated_cost > max_cost:
